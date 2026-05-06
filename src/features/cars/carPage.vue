@@ -1,21 +1,30 @@
 <script setup>
 import { onMounted, ref } from "vue";
+import { useRouter } from "vue-router";
 import { supabase } from "../../utils/supabase";
+import TrashButton from "../../components/TrashButton.vue";
+import { fetchCars, deleteCar, addCar } from "./services/car-services";
 
+const router = useRouter();
 const car_name = ref("");
 const car_color = ref("");
 
 const cars = ref([]);
 
-async function fetchCars() {
-  const { data } = await supabase.from("cars").select();
-  cars.value = data;
+async function handleDeleteCar(id) {
+  await deleteCar(id);
+  cars.value = await fetchCars();
 }
 
-async function addCar() {}
+async function handleAddCar(name, color) {
+  await addCar(name, color);
+  car_name.value = "";
+  car_color.value = "";
+  cars.value = await fetchCars();
+}
 
-onMounted(() => {
-  fetchCars();
+onMounted(async () => {
+  cars.value = await fetchCars();
 });
 </script>
 
@@ -29,18 +38,25 @@ onMounted(() => {
     <section class="form">
       <input v-model="car_name" class="field" placeholder="Name" />
       <input v-model="car_color" class="field" placeholder="Color" />
-      <button class="btn">Add</button>
+      <button @click="handleAddCar(car_name, car_color)" class="btn">
+        Add
+      </button>
     </section>
 
     <section class="list">
       <div class="list-header">
         <span>Name</span>
         <span>Color</span>
+        <span></span>
       </div>
       <ul>
         <li v-for="car in cars" :key="car.id" class="list-row">
-          <span>{{ car.car_name }}</span>
+          <span @click="router.push(`/cars/${car.id}`)">{{
+            car.car_name
+          }}</span>
           <span>{{ car.car_color }}</span>
+
+          <TrashButton @click="handleDeleteCar(car.id)" />
         </li>
       </ul>
       <p v-if="cars.length === 0" class="empty">No cars yet.</p>
